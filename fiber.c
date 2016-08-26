@@ -13,25 +13,26 @@ void _fiber_entry();
 
 void spawn(struct fiber *f, int priority, void (*fn)(void *), void *arg)
 {
-	intptr_t sp;
+	uint8_t *sp = f->stack + FIBER_STACK_SIZE - 1;
 
 	/* Put the entry point into the stack, so that the first 'ret'
 	   actually takes us at the start of _fiber_entry. */
-	f->stack[FIBER_STACK_SIZE-1] = (pgm_intptr_t) _fiber_entry & 0xFF;
-	f->stack[FIBER_STACK_SIZE-2] = (pgm_intptr_t) _fiber_entry >> 8;
+	*sp-- = (pgm_intptr_t) _fiber_entry & 0xFF;
+	*sp-- = (pgm_intptr_t) _fiber_entry >> 8;
 
 	/* Argument-passing registers are caller-save and hence not stored in
 	   the context, so we use callee-save registers to pass arguments to
 	   a special assembly entry routine which then loads them into their
 	   correct argument registers. */
-	sp = (intptr_t) f->stack + FIBER_STACK_SIZE - 3;
-	f->context[FIBER_CONTEXT_SPL] = sp & 0xFF;
-	f->context[FIBER_CONTEXT_SPH] = sp >> 8;
-	f->context[FIBER_CONTEXT_R2] = (intptr_t) arg & 0xFF;
-	f->context[FIBER_CONTEXT_R3] = (intptr_t) arg >> 8;
-	f->context[FIBER_CONTEXT_R4] = (pgm_intptr_t) fn & 0xFF;
-	f->context[FIBER_CONTEXT_R5] = (pgm_intptr_t) fn >> 8;
+	*sp-- = (intptr_t) arg & 0xFF;
+	*sp-- = (intptr_t) arg >> 8;
+	*sp-- = (pgm_intptr_t) fn & 0xFF;
+	*sp-- = (pgm_intptr_t) fn >> 8;
 
+	/* Leave r6-r17, r28, r29 unspecified. */
+	sp -= 14;
+
+	f->stackp = sp;
 	f->priority = priority;
 	f->queued = 0;
 
