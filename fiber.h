@@ -2,14 +2,12 @@
 #define FIBER_H
 
 #define FIBER_STACK_SIZE	128
-#define FIBER_PRIORITY_COUNT	4
 
 struct fiber {
-	uint8_t *stackp;
-	unsigned char stack[FIBER_STACK_SIZE];
 	struct fiber *next;
-	int priority;
-	int queued;
+	uint8_t *stackp;
+	uint8_t priority;
+	unsigned char stack[FIBER_STACK_SIZE];
 };
 
 void spawn(struct fiber *f, int priority, void (*fn)(void *), void *arg);

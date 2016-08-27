@@ -7,7 +7,6 @@ typedef uint16_t pgm_intptr_t;
 
 struct fiber _main_fiber = { 0 };
 struct fiber *volatile _current = &_main_fiber;
-struct fiber *volatile _queue[FIBER_PRIORITY_COUNT] = { 0 };
 
 void _fiber_entry();
 
@@ -34,7 +33,6 @@ void spawn(struct fiber *f, int priority, void (*fn)(void *), void *arg)
 
 	f->stackp = sp;
 	f->priority = priority;
-	f->queued = 0;
 
 	wake(f);
 }
@@ -42,42 +40,4 @@ void spawn(struct fiber *f, int priority, void (*fn)(void *), void *arg)
 struct fiber *current()
 {
 	return _current;
-}
-
-void wake(struct fiber *f)
-{
-	struct fiber *volatile *pf;
-
-	if (f->queued)
-		return;
-
-	f->queued = 1;
-	f->next = 0;
-
-	/* Link at the end of the queue. */
-	cli();
-	for (pf = &_queue[f->priority]; *pf; pf = &(*pf)->next)
-		;
-	*pf = f;
-	sei();
-}
-
-void _schedule()
-{
-	while (1) {
-		for (int i = 0; i < FIBER_PRIORITY_COUNT; i++) {
-			struct fiber *f = _queue[i];
-
-			if (!f)
-				continue;
-
-			cli();
-			_queue[i] = f->next;
-			_current = f;
-			_current->queued = 0;
-			sei();
-
-			return;
-		}
-	}
 }

@@ -1,8 +1,7 @@
 #include <avr/interrupt.h>
 #include "fiber.h"
 
-struct timer
-{
+struct timer {
 	struct fiber *fiber;
 	unsigned int ticks;
 };
@@ -11,6 +10,7 @@ volatile struct timer timers[8] = { 0 };
 
 ISR(TIMER0_OVF_vect)
 {
+//	sei();
 	for (int i = 0; i < 8; i++) {
 		if (!timers[i].fiber)
 			continue;
