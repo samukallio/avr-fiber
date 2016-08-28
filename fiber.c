@@ -10,9 +10,15 @@ struct fiber *volatile _current = &_main_fiber;
 
 void _fiber_entry();
 
-void spawn(struct fiber *f, int priority, void (*fn)(void *), void *arg)
+int spawn(struct fiber *f, int priority, uint8_t *stack, size_t stack_size,
+           void (*fn)(void *), void *arg)
 {
-	uint8_t *sp = f->stack + FIBER_STACK_SIZE - 1;
+	uint8_t *sp;
+
+	if (stack_size < FIBER_STACK_SIZE_MIN)
+		return -1;
+
+	sp = stack + stack_size - 1;
 
 	/* Put the entry point into the stack, so that the first 'ret'
 	   actually takes us at the start of _fiber_entry. */
@@ -31,10 +37,12 @@ void spawn(struct fiber *f, int priority, void (*fn)(void *), void *arg)
 	/* Leave r6-r17, r28, r29 unspecified. */
 	sp -= 14;
 
-	f->stackp = sp;
+	f->sp = sp;
 	f->priority = priority;
 
 	wake(f);
+
+	return 0;
 }
 
 struct fiber *current()

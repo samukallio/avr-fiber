@@ -1,18 +1,20 @@
 #ifndef FIBER_H
 #define FIBER_H
 
-#define FIBER_STACK_SIZE	128
+#include <stddef.h>
+
+#define FIBER_STACK_SIZE_MIN 64
 
 /* Fiber Control Block (FCB) */
 struct fiber {
 	struct fiber *next;
-	uint8_t *stackp;
+	uint8_t *sp;
 	uint8_t priority;
-	unsigned char stack[FIBER_STACK_SIZE];
 };
 
 /* Start a new fiber with the given priority, executing the given function. */
-void spawn(struct fiber *f, int priority, void (*fn)(void *), void *arg);
+int spawn(struct fiber *f, int priority, uint8_t *stack, size_t stack_size,
+          void (*fn)(void *), void *arg);
 
 /* Return the FCB of the currently executing fiber. */
 struct fiber *current();
