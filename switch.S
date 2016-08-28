@@ -4,13 +4,12 @@
 
 .section .text
 
-.globl _fiber_entry
-.type _fiber_entry, @function
-_fiber_entry:
-	/* Load argument to entry function. */
+.globl _f_entry
+.type _f_entry, @function
+_f_entry:
+	/* Load argument pointer (r2:r3), entry point address (r4:r5) and
+	   start executing. */
 	movw r24, r2
-
-	/* Load entry function address and start executing the fiber. */
 	movw r30, r4
 	icall
 
@@ -19,7 +18,7 @@ _fiber_entry:
 .globl yield
 .type yield, @function
 yield:
-	/* Fiber is yielding, so we can assume control of the interrupt flag. */
+	/* Fiber is yielding, so we can assume control of interrupt state. */
 	sei
 
 	/* Preserve fiber register context. We only include callee-save
@@ -43,46 +42,43 @@ yield:
 	push r28
 	push r29
 
-	/* Load the address of the current FCB into X. */
-	lds r26, _current
-	lds r27, _current+1
+	/* Store the current stack pointer into the FCB. */
+	lds r30, _f_current
+	lds r31, _f_current+1
+	in r18, SPL
+	in r19, SPH
+	std Z+2, r18
+	std Z+3, r19
 
-	/* Load the address of the next FCB into Y and make it current.
-	   The other end of this list manipulation happens in interrupts,
-	   so disable them while we touch the list. */
-	cli
-	ld r28, X+
-	ld r29, X+
-	sts _current, r28
-	sei
-	sts _current+1, r29
-
-	/* Store the current stack pointer into the old FCB. */
-	in r2, SPL
-	in r3, SPH
-	st X+, r2
-	st X, r3
-
-	/* There may have been nothing else waiting to run, in that case we
-	   need to wait for an interrupt to give us something to do. */
 yield.wait:
-	cp r28, r1
-	cpc r29, r1
-	brne yield.switch
-	cli
-	lds r28, _current
-	sei
-	lds r29, _current+1
-	rjmp yield.wait
+	/* Wait for a fiber to become available in the run queue. */
+	lds r30, _f_queue_head
+	lds r31, _f_queue_head+1
+	cp r30, r1
+	cpc r31, r1
+	breq yield.wait
 
 yield.switch:
-	/* Switch to the new fiber stack. */
-	ldd r2, Y+2
-	ldd r3, Y+3
+	/* Remove the first control block from the run queue. */
 	cli
-	out SPL, r2
+	lds r30, _f_queue_head
+	lds r31, _f_queue_head+1
+	ld r18, Z+
+	ld r19, Z+
+	sts _f_queue_head, r18
 	sei
-	out SPH, r3
+	sts _f_queue_head+1, r19
+
+	/* Switch to target fiber. */
+	ld r18, Z+
+	ld r19, Z
+	cli
+	out SPL, r18
+	sei
+	out SPH, r19
+	sbiw r30, 3
+	sts _f_current, r30
+	sts _f_current+1, r31
 
 	/* Restore fiber context. */
 	pop r29
@@ -119,9 +115,9 @@ wake:
 
 wake.start:
 	/* Search for an insertion point in the run queue. First insertion
-	   point candidate is the global variable _current. */
-	ldi r26, lo8(_current)
-	ldi r27, hi8(_current)
+	   point candidate is the global variable _f_queue_head. */
+	ldi r26, lo8(_f_queue_head)
+	ldi r27, hi8(_f_queue_head)
 
 wake.next:
 	/* Load FCB pointer stored at the cursor. */
