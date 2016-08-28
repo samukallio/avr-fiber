@@ -8,14 +8,10 @@
 .type _fiber_entry, @function
 _fiber_entry:
 	/* Load argument to entry function. */
-	mov r24, r2
-	mov r25, r3
+	movw r24, r2
 
-	/* Load entry function address. */
-	mov r30, r4
-	mov r31, r5
-
-	/* Execute fiber function. */
+	/* Load entry function address and start executing the fiber. */
+	movw r30, r4
 	icall
 
 	/* NB: Fall-through to yield. */
