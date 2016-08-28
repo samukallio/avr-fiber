@@ -13,7 +13,7 @@ struct fiber {
 };
 
 /* Start a new fiber with the given priority, executing the given function. */
-int spawn(struct fiber *f, int priority, uint8_t *stack, size_t stack_size,
+int spawn(struct fiber *f, uint8_t priority, uint8_t *stack, size_t stack_size,
           void (*fn)(void *), void *arg);
 
 /* Return the FCB of the currently executing fiber. */

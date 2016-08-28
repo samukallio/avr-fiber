@@ -10,7 +10,7 @@ struct fiber *volatile _current = &_main_fiber;
 
 void _fiber_entry();
 
-int spawn(struct fiber *f, int priority, uint8_t *stack, size_t stack_size,
+int spawn(struct fiber *f, uint8_t priority, uint8_t *stack, size_t stack_size,
            void (*fn)(void *), void *arg)
 {
 	uint8_t *sp;
