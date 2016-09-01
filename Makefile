@@ -4,7 +4,10 @@ AR=avr-ar rcs
 MCU=atmega32
 F_CPU=16000000UL
 
-CFLAGS=-mmcu=$(MCU) -Os -DF_CPU=$(F_CPU)
+CFLAGS=-mmcu=$(MCU) -DF_CPU=$(F_CPU)
+CFLAGS+=-std=c99 -pedantic
+CFLAGS+=-Werror -Wall -Wextra -Wshadow
+CFLAGS+=-Os
 AFLAGS=-mmcu=$(MCU) -DF_CPU=$(F_CPU)
 
 CSRC=fiber.c sleep.c
