@@ -2,13 +2,12 @@ CC=avr-gcc
 AR=avr-ar rcs
 
 MCU=atmega32
-F_CPU=16000000UL
 
-CFLAGS=-mmcu=$(MCU) -DF_CPU=$(F_CPU)
+CFLAGS=-mmcu=$(MCU)
 CFLAGS+=-std=c99 -pedantic
 CFLAGS+=-Werror -Wall -Wextra -Wshadow
 CFLAGS+=-Os
-AFLAGS=-mmcu=$(MCU) -DF_CPU=$(F_CPU)
+AFLAGS=-mmcu=$(MCU)
 
 CSRC=fiber.c sleep.c
 ASRC=switch.S
