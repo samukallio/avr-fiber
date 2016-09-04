@@ -23,24 +23,9 @@ yield:
 
 	/* Preserve fiber register context. We only include callee-save
 	   registers as per the C calling convention. */
-	push r2
-	push r3
-	push r4
-	push r5
-	push r6
-	push r7
-	push r8
-	push r9
-	push r10
-	push r11
-	push r12
-	push r13
-	push r14
-	push r15
-	push r16
-	push r17
-	push r28
-	push r29
+	.irp regno, 2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,28,29
+	push r\regno
+	.endr
 
 	/* Store the current stack pointer into the FCB. */
 	lds r30, _f_current
@@ -81,24 +66,9 @@ yield.switch:
 	sts _f_current+1, r31
 
 	/* Restore fiber context. */
-	pop r29
-	pop r28
-	pop r17
-	pop r16
-	pop r15
-	pop r14
-	pop r13
-	pop r12
-	pop r11
-	pop r10
-	pop r9
-	pop r8
-	pop r7
-	pop r6
-	pop r5
-	pop r4
-	pop r3
-	pop r2
+	.irp regno, 29,28,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2
+	pop r\regno
+	.endr
 
 	/* Resume execution. */
 	ret
