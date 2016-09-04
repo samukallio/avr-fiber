@@ -16,6 +16,30 @@
     #endif
 #endif
 
+.macro X_movw dst src
+#if defined(__AVR_HAVE_MOVW__) && __AVR_HAVE_MOVW__
+	movw	\dst, \src
+#else
+	.L_movw_dst = -1
+	.L_movw_src = -1
+	.L_movw_n = 0
+	.irp reg,	r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, \
+			r10,r11,r12,r13,r14,r15,r16,r17,r18,r19, \
+			r20,r21,r22,r23,r24,r25,r26,r27,r28,r29, \
+			r30,r31
+		.ifc \reg,\dst
+			.L_movw_dst = .L_movw_n
+		.endif
+		.ifc \reg,\src
+			.L_movw_src = .L_movw_n
+		.endif
+		.L_movw_n = .L_movw_n + 1
+	.endr
+	mov	(.L_movw_dst), (.L_movw_src)
+	mov	(.L_movw_dst)+1, (.L_movw_src)+1
+#endif
+.endm
+
 .section .text
 
 .globl _f_entry
@@ -23,8 +47,8 @@
 _f_entry:
 	/* Load argument pointer (r2:r3), entry point address (r4:r5) and
 	   start executing. */
-	movw	r24, r2
-	movw	ZL, r4
+	X_movw	r24, r2
+	X_movw	ZL, r4
 	icall
 
 	/* NB: Fall-through to yield. */
@@ -94,7 +118,7 @@ wake:
 	in	__tmp_reg__, AVR_STATUS_ADDR
 
 	/* Load priority value from target FCB. */
-	movw	ZL, r24
+	X_movw	ZL, r24
 	ldd	r18, Z+4
 
 wake.start:
@@ -124,14 +148,14 @@ wake.next:
 	/* Address of the next insertion point is the address of the 'next'
 	   field of the current FCB, which coincides with the address of the
 	   FCB itself. */
-	movw	XL, ZL
+	X_movw	XL, ZL
 	rjmp	wake.next
 
 wake.insert:
 	/* Insert our FCB before the FCB that was previously at the insertion
 	   point. We're only touching our own FCB, so no need to be careful. */
-	movw	r20, ZL
-	movw	ZL, r24
+	X_movw	r20, ZL
+	X_movw	ZL, r24
 	st	Z+, r20
 	st	Z, r21
 
