@@ -1,5 +1,21 @@
 #include <avr/io.h>
 
+#if !defined(__tmp_reg__)
+    #if defined(__AVR_TINY__)
+        #define __tmp_reg__ r16
+    #else
+        #define __tmp_reg__ r0
+    #endif
+#endif
+
+#if !defined(__zero_reg__)
+    #if defined(__AVR_TINY__)
+        #define __zero_reg__ r17
+    #else
+        #define __zero_reg__ r1
+    #endif
+#endif
+
 .section .text
 
 .globl _f_entry
@@ -37,8 +53,8 @@ yield.wait:
 	/* Wait for a fiber to become available in the run queue. */
 	lds	ZL, _f_queue_head
 	lds	ZH, _f_queue_head+1
-	cp	ZL, r1
-	cpc	ZH, r1
+	cp	ZL, __zero_reg__
+	cpc	ZH, __zero_reg__
 	breq	yield.wait
 
 yield.switch:
@@ -75,7 +91,7 @@ yield.switch:
 .type wake, @function
 wake:
 	/* Preserve the status register for the interrupt flag. */
-	in	r0, AVR_STATUS_ADDR
+	in	__tmp_reg__, AVR_STATUS_ADDR
 
 	/* Load priority value from target FCB. */
 	movw	ZL, r24
@@ -91,12 +107,12 @@ wake.next:
 	/* Load FCB pointer stored at the cursor. */
 	cli
 	ld	ZL, X+
-	out	AVR_STATUS_ADDR, r0
+	out	AVR_STATUS_ADDR, __tmp_reg__
 	ld	ZH, X
 
 	/* If it's a null pointer (end of list), insert here. */
-	cp	ZL, r1
-	cpc	ZH, r1
+	cp	ZL, __zero_reg__
+	cpc	ZH, __zero_reg__
 	breq	wake.insert
 
 	/* Compare the priority of the FCB here to our priority value. If ours
@@ -132,11 +148,11 @@ wake.insert:
 
 	/* Everything checks out, so insert here and restore interrupt state. */
 	st	X+, r24
-	out	AVR_STATUS_ADDR, r0
+	out	AVR_STATUS_ADDR, __tmp_reg__
 	st	X, r25
 
 	ret
 
 wake.restart:
-	out	AVR_STATUS_ADDR, r0
+	out	AVR_STATUS_ADDR, __tmp_reg__
 	rjmp	wake.start
