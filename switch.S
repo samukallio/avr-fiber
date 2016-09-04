@@ -8,7 +8,7 @@ _f_entry:
 	/* Load argument pointer (r2:r3), entry point address (r4:r5) and
 	   start executing. */
 	movw	r24, r2
-	movw	r30, r4
+	movw	ZL, r4
 	icall
 
 	/* NB: Fall-through to yield. */
@@ -26,8 +26,8 @@ yield:
 	.endr
 
 	/* Store the current stack pointer into the FCB. */
-	lds	r30, _f_current
-	lds	r31, _f_current+1
+	lds	ZL, _f_current
+	lds	ZH, _f_current+1
 	in	r18, AVR_STACK_POINTER_LO_ADDR
 	in	r19, AVR_STACK_POINTER_HI_ADDR
 	std	Z+2, r18
@@ -35,17 +35,17 @@ yield:
 
 yield.wait:
 	/* Wait for a fiber to become available in the run queue. */
-	lds	r30, _f_queue_head
-	lds	r31, _f_queue_head+1
-	cp	r30, r1
-	cpc	r31, r1
+	lds	ZL, _f_queue_head
+	lds	ZH, _f_queue_head+1
+	cp	ZL, r1
+	cpc	ZH, r1
 	breq	yield.wait
 
 yield.switch:
 	/* Remove the first control block from the run queue. */
 	cli
-	lds	r30, _f_queue_head
-	lds	r31, _f_queue_head+1
+	lds	ZL, _f_queue_head
+	lds	ZH, _f_queue_head+1
 	ld	r18, Z+
 	ld	r19, Z+
 	sts	_f_queue_head, r18
@@ -59,9 +59,9 @@ yield.switch:
 	out	AVR_STACK_POINTER_LO_ADDR, r18
 	sei
 	out	AVR_STACK_POINTER_HI_ADDR, r19
-	sbiw	r30, 3
-	sts	_f_current, r30
-	sts	_f_current+1, r31
+	sbiw	ZL, 3
+	sts	_f_current, ZL
+	sts	_f_current+1, ZH
 
 	/* Restore fiber context. */
 	.irp	regno, 29,28,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2
@@ -78,25 +78,25 @@ wake:
 	in	r0, AVR_STATUS_ADDR
 
 	/* Load priority value from target FCB. */
-	movw	r30, r24
+	movw	ZL, r24
 	ldd	r18, Z+4
 
 wake.start:
 	/* Search for an insertion point in the run queue. First insertion
 	   point candidate is the global variable _f_queue_head. */
-	ldi	r26, lo8(_f_queue_head)
-	ldi	r27, hi8(_f_queue_head)
+	ldi	XL, lo8(_f_queue_head)
+	ldi	XH, hi8(_f_queue_head)
 
 wake.next:
 	/* Load FCB pointer stored at the cursor. */
 	cli
-	ld	r30, X+
+	ld	ZL, X+
 	out	AVR_STATUS_ADDR, r0
-	ld	r31, X
+	ld	ZH, X
 
 	/* If it's a null pointer (end of list), insert here. */
-	cp	r30, r1
-	cpc	r31, r1
+	cp	ZL, r1
+	cpc	ZH, r1
 	breq	wake.insert
 
 	/* Compare the priority of the FCB here to our priority value. If ours
@@ -108,14 +108,14 @@ wake.next:
 	/* Address of the next insertion point is the address of the 'next'
 	   field of the current FCB, which coincides with the address of the
 	   FCB itself. */
-	movw	r26, r30
+	movw	XL, ZL
 	rjmp	wake.next
 
 wake.insert:
 	/* Insert our FCB before the FCB that was previously at the insertion
 	   point. We're only touching our own FCB, so no need to be careful. */
-	movw	r20, r30
-	movw	r30, r24
+	movw	r20, ZL
+	movw	ZL, r24
 	st	Z+, r20
 	st	Z, r21
 
