@@ -1,6 +1,4 @@
-#define SPL 0x3D
-#define SPH 0x3E
-#define SREG 0x3F
+#include <avr/io.h>
 
 .section .text
 
@@ -30,8 +28,8 @@ yield:
 	/* Store the current stack pointer into the FCB. */
 	lds	r30, _f_current
 	lds	r31, _f_current+1
-	in	r18, SPL
-	in	r19, SPH
+	in	r18, AVR_STACK_POINTER_LO_ADDR
+	in	r19, AVR_STACK_POINTER_HI_ADDR
 	std	Z+2, r18
 	std	Z+3, r19
 
@@ -58,9 +56,9 @@ yield.switch:
 	ld	r18, Z+
 	ld	r19, Z
 	cli
-	out	SPL, r18
+	out	AVR_STACK_POINTER_LO_ADDR, r18
 	sei
-	out	SPH, r19
+	out	AVR_STACK_POINTER_HI_ADDR, r19
 	sbiw	r30, 3
 	sts	_f_current, r30
 	sts	_f_current+1, r31
@@ -77,7 +75,7 @@ yield.switch:
 .type wake, @function
 wake:
 	/* Preserve the status register for the interrupt flag. */
-	in	r0, SREG
+	in	r0, AVR_STATUS_ADDR
 
 	/* Load priority value from target FCB. */
 	movw	r30, r24
@@ -93,7 +91,7 @@ wake.next:
 	/* Load FCB pointer stored at the cursor. */
 	cli
 	ld	r30, X+
-	out	SREG, r0
+	out	AVR_STATUS_ADDR, r0
 	ld	r31, X
 
 	/* If it's a null pointer (end of list), insert here. */
@@ -134,11 +132,11 @@ wake.insert:
 
 	/* Everything checks out, so insert here and restore interrupt state. */
 	st	X+, r24
-	out	SREG, r0
+	out	AVR_STATUS_ADDR, r0
 	st	X, r25
 
 	ret
 
 wake.restart:
-	out	SREG, r0
+	out	AVR_STATUS_ADDR, r0
 	rjmp	wake.start
