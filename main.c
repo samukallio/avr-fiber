@@ -14,6 +14,8 @@ struct print_args {
 	const char *text;
 };
 
+
+__attribute__((OS_task))
 void print_task(void *arg)
 {
 	struct print_args *p = arg;
