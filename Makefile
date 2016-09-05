@@ -12,7 +12,7 @@ AFLAGS=-mmcu=$(MCU)
 CSRC=fiber.c sleep.c
 ASRC=switch.S
 OBJ=$(CSRC:%.c=%.o) $(ASRC:%.S=%.o)
-TARGET=ufiber.a
+TARGET=fiber.a
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
